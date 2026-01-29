@@ -136,13 +136,21 @@ export const usersStorage = {
   },
 
   getNextId(): number {
-    const data = JSON.parse(fs.readFileSync(usersFile, "utf-8")) as {
-      nextId: number;
-    };
-    const nextId = data.nextId;
-    data.nextId++;
-    fs.writeFileSync(usersFile, JSON.stringify(data, null, 2));
-    return nextId;
+    try {
+      const content = fs.readFileSync(usersFile, "utf-8");
+      const data = JSON.parse(content) as {
+        users: StoredUser[];
+        nextId: number;
+      };
+      const nextId = data.nextId;
+      data.nextId++;
+      fs.writeFileSync(usersFile, JSON.stringify(data, null, 2));
+      console.log(`[STORAGE] Generated new ID: ${nextId}`);
+      return nextId;
+    } catch (error) {
+      console.error(`[STORAGE] Error generating ID: ${error}`);
+      throw error;
+    }
   },
 };
 
