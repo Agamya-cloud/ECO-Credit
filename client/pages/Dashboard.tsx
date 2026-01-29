@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import {
   BarChart3,
@@ -8,56 +9,108 @@ import {
   Lightbulb,
   Droplet,
   Wind,
+  Loader,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+interface DashboardData {
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    full_name: string | null;
+    carbon_credits: number;
+  };
+  stats: {
+    totalConsumption: number;
+    totalEmissions: number;
+    totalCredits: number;
+    recyclingContributions: number;
+  };
+  monthlyData: Array<{
+    month: string;
+    emissions: number;
+    credits: number;
+  }>;
+  recentUploads: Array<{
+    id: number;
+    energy_type: string;
+    units_consumed: number;
+    date: string;
+  }>;
+}
 
 export default function Dashboard() {
-  // Mock data
-  const summaryCards = [
-    {
-      icon: Zap,
-      title: "Total Energy Consumption",
-      value: "2,450",
-      unit: "kWh",
-      color: "eco-blue",
-      trend: "+5% from last month",
-    },
-    {
-      icon: Wind,
-      title: "Estimated Carbon Emissions",
-      value: "892",
-      unit: "kg CO₂",
-      color: "eco-green-dark",
-      trend: "-12% from last month",
-    },
-    {
-      icon: Leaf,
-      title: "Carbon Credits Earned",
-      value: "2,450",
-      unit: "Credits",
-      color: "eco-green",
-      trend: "+28% from last month",
-    },
-    {
-      icon: Trash2,
-      title: "Recycling Contributions",
-      value: "125",
-      unit: "kg",
-      color: "eco-blue",
-      trend: "+45% from last month",
-    },
-  ];
+  const { user, token } = useAuth();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
-  const monthlyData = [
-    { month: "Jan", emissions: 980, credits: 1200 },
-    { month: "Feb", emissions: 920, credits: 1450 },
-    { month: "Mar", emissions: 850, credits: 1680 },
-    { month: "Apr", emissions: 780, credits: 1920 },
-    { month: "May", emissions: 720, credits: 2150 },
-    { month: "Jun", emissions: 892, credits: 2450 },
-  ];
+  useEffect(() => {
+    if (token) {
+      loadDashboard();
+    }
+  }, [token]);
 
-  const maxEmission = Math.max(...monthlyData.map((d) => d.emissions));
-  const maxCredit = Math.max(...monthlyData.map((d) => d.credits));
+  const loadDashboard = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/billing/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { success: boolean; data: DashboardData };
+        if (data.success) {
+          setDashboardData(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load dashboard:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const summaryCards = dashboardData
+    ? [
+        {
+          icon: Zap,
+          title: "Total Energy Consumption",
+          value: dashboardData.stats.totalConsumption.toFixed(1),
+          unit: "kWh",
+          color: "eco-blue" as const,
+          trend: "units tracked",
+        },
+        {
+          icon: Wind,
+          title: "Estimated Carbon Emissions",
+          value: dashboardData.stats.totalEmissions.toFixed(0),
+          unit: "kg CO₂",
+          color: "eco-green-dark" as const,
+          trend: "total emissions",
+        },
+        {
+          icon: Leaf,
+          title: "Carbon Credits Earned",
+          value: dashboardData.stats.totalCredits.toString(),
+          unit: "Credits",
+          color: "eco-green" as const,
+          trend: "earned",
+        },
+        {
+          icon: Trash2,
+          title: "Recycling Contributions",
+          value: dashboardData.stats.recyclingContributions.toString(),
+          unit: "kg",
+          color: "eco-blue" as const,
+          trend: "tracked",
+        },
+      ]
+    : [];
 
   const tips = [
     {
@@ -87,6 +140,37 @@ export default function Dashboard() {
       impact: "+60 credits",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-12">
+          <Loader className="w-8 h-8 animate-spin text-eco-green" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-600">Failed to load dashboard data</p>
+        </div>
+      </div>
+    );
+  }
+
+  const maxEmission =
+    dashboardData.monthlyData.length > 0
+      ? Math.max(...dashboardData.monthlyData.map((d) => d.emissions))
+      : 100;
+  const maxCredit =
+    dashboardData.monthlyData.length > 0
+      ? Math.max(...dashboardData.monthlyData.map((d) => d.credits))
+      : 100;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -167,26 +251,34 @@ export default function Dashboard() {
                     Carbon Emissions Trend
                   </h3>
                   <span className="text-sm text-eco-green-dark font-semibold">
-                    -12% improvement
+                    {dashboardData.monthlyData.length > 0
+                      ? "Tracking your progress"
+                      : "No data yet"}
                   </span>
                 </div>
                 <div className="flex items-end gap-3 h-40">
-                  {monthlyData.map((data, index) => (
-                    <div
-                      key={index}
-                      className="flex-1 flex flex-col items-center gap-2 group"
-                    >
+                  {dashboardData.monthlyData.length > 0 ? (
+                    dashboardData.monthlyData.map((data, index) => (
                       <div
-                        className="w-full rounded-t-lg bg-eco-green-light hover:bg-eco-green-dark transition-all"
-                        style={{
-                          height: `${(data.emissions / maxEmission) * 150}px`,
-                        }}
-                      ></div>
-                      <span className="text-xs font-medium text-gray-600">
-                        {data.month}
-                      </span>
+                        key={index}
+                        className="flex-1 flex flex-col items-center gap-2 group"
+                      >
+                        <div
+                          className="w-full rounded-t-lg bg-eco-green-light hover:bg-eco-green-dark transition-all"
+                          style={{
+                            height: `${maxEmission > 0 ? (data.emissions / maxEmission) * 150 : 0}px`,
+                          }}
+                        ></div>
+                        <span className="text-xs font-medium text-gray-600">
+                          {data.month}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full flex items-center justify-center h-40 text-gray-500">
+                      No data yet. Start uploading billing data!
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -197,26 +289,34 @@ export default function Dashboard() {
                     Credits Earned
                   </h3>
                   <span className="text-sm text-eco-blue font-semibold">
-                    +104% growth
+                    {dashboardData.monthlyData.length > 0
+                      ? "Your earnings"
+                      : "No credits yet"}
                   </span>
                 </div>
                 <div className="flex items-end gap-3 h-40">
-                  {monthlyData.map((data, index) => (
-                    <div
-                      key={index}
-                      className="flex-1 flex flex-col items-center gap-2 group"
-                    >
+                  {dashboardData.monthlyData.length > 0 ? (
+                    dashboardData.monthlyData.map((data, index) => (
                       <div
-                        className="w-full rounded-t-lg bg-eco-blue hover:bg-eco-blue-dark transition-all"
-                        style={{
-                          height: `${(data.credits / maxCredit) * 150}px`,
-                        }}
-                      ></div>
-                      <span className="text-xs font-medium text-gray-600">
-                        {data.month}
-                      </span>
+                        key={index}
+                        className="flex-1 flex flex-col items-center gap-2 group"
+                      >
+                        <div
+                          className="w-full rounded-t-lg bg-eco-blue hover:bg-eco-blue-dark transition-all"
+                          style={{
+                            height: `${maxCredit > 0 ? (data.credits / maxCredit) * 150 : 0}px`,
+                          }}
+                        ></div>
+                        <span className="text-xs font-medium text-gray-600">
+                          {data.month}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full flex items-center justify-center h-40 text-gray-500">
+                      No data yet. Start uploading billing data!
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -231,21 +331,30 @@ export default function Dashboard() {
 
             <div className="bg-white/20 backdrop-blur rounded-lg p-6 mb-6">
               <p className="text-white/80 text-sm mb-2">Available Credits</p>
-              <p className="text-5xl font-bold">2,450</p>
+              <p className="text-5xl font-bold">
+                {dashboardData.stats.totalCredits}
+              </p>
             </div>
 
             <div className="space-y-4">
               <div className="bg-white/10 rounded-lg p-4">
-                <p className="text-sm text-white/80">This Month Earned</p>
-                <p className="text-2xl font-bold">+450</p>
+                <p className="text-sm text-white/80">Total Emissions Tracked</p>
+                <p className="text-2xl font-bold">
+                  {dashboardData.stats.totalEmissions.toFixed(0)} kg
+                </p>
               </div>
               <div className="bg-white/10 rounded-lg p-4">
-                <p className="text-sm text-white/80">Lifetime Total</p>
-                <p className="text-2xl font-bold">8,920</p>
+                <p className="text-sm text-white/80">All Time Total</p>
+                <p className="text-2xl font-bold">
+                  {dashboardData.stats.totalCredits}
+                </p>
               </div>
-              <button className="w-full mt-6 bg-white text-eco-green hover:bg-gray-100 rounded-lg py-2 font-semibold transition-colors">
-                Redeem Credits
-              </button>
+              <a
+                href="/billing"
+                className="w-full mt-6 block text-center bg-white text-eco-green hover:bg-gray-100 rounded-lg py-2 font-semibold transition-colors"
+              >
+                Upload More Data
+              </a>
             </div>
           </div>
         </div>
@@ -285,93 +394,53 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Leaderboard Preview */}
-        <div className="bg-white rounded-xl p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Leaderboard Preview
-            </h2>
-            <a
-              href="/leaderboard"
-              className="text-eco-green hover:text-eco-green-dark font-semibold"
-            >
-              View Full →
-            </a>
-          </div>
+        {/* Recent Uploads Preview */}
+        {dashboardData.recentUploads.length > 0 && (
+          <div className="bg-white rounded-xl p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Recent Uploads
+              </h2>
+              <a
+                href="/billing"
+                className="text-eco-green hover:text-eco-green-dark font-semibold"
+              >
+                View All →
+              </a>
+            </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                    Rank
-                  </th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700">
-                    Username
-                  </th>
-                  <th className="text-right py-4 px-4 font-semibold text-gray-700">
-                    Credits Earned
-                  </th>
-                  <th className="text-right py-4 px-4 font-semibold text-gray-700">
-                    Emission Reduction
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  {
-                    rank: 1,
-                    name: "GreenGuru",
-                    credits: 8920,
-                    reduction: 2450,
-                  },
-                  {
-                    rank: 2,
-                    name: "EcoWarrior",
-                    credits: 7650,
-                    reduction: 2120,
-                  },
-                  {
-                    rank: 3,
-                    name: "SustainableJoe",
-                    credits: 6890,
-                    reduction: 1980,
-                  },
-                  {
-                    rank: 4,
-                    name: "You",
-                    credits: 2450,
-                    reduction: 892,
-                  },
-                  {
-                    rank: 5,
-                    name: "ClimateChampion",
-                    credits: 1890,
-                    reduction: 680,
-                  },
-                ].map((row) => (
-                  <tr
-                    key={row.rank}
-                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                      row.name === "You" ? "bg-eco-green-light" : ""
-                    }`}
-                  >
-                    <td className="py-4 px-4 font-semibold text-gray-900">
-                      #{row.rank}
-                    </td>
-                    <td className="py-4 px-4 text-gray-700">{row.name}</td>
-                    <td className="py-4 px-4 text-right font-semibold text-eco-green">
-                      {row.credits.toLocaleString()}
-                    </td>
-                    <td className="py-4 px-4 text-right text-gray-700">
-                      {row.reduction} kg CO₂
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                      Date
+                    </th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">
+                      Energy Type
+                    </th>
+                    <th className="text-right py-4 px-4 font-semibold text-gray-700">
+                      Units
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {dashboardData.recentUploads.map((upload) => (
+                    <tr key={upload.id} className="border-b border-gray-100">
+                      <td className="py-4 px-4">
+                        {new Date(upload.date).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 px-4">{upload.energy_type}</td>
+                      <td className="py-4 px-4 text-right font-semibold">
+                        {upload.units_consumed}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
