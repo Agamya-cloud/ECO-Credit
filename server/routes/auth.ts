@@ -1,8 +1,37 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-import bcrypt from "bcrypt";
-import { db, type User } from "../db";
 import crypto from "crypto";
+
+// In-memory store for demo purposes
+interface StoredUser {
+  id: number;
+  username: string;
+  email: string;
+  password_hash: string;
+  full_name: string | null;
+  carbon_credits: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Session {
+  user_id: number;
+  token: string;
+  expires_at: string;
+}
+
+const users: Map<number, StoredUser> = new Map();
+const sessions: Map<string, Session> = new Map();
+let nextUserId = 1;
+
+// Simple password hashing (not secure - for demo only)
+function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
 
 // Validation schemas
 const SignupSchema = z.object({
@@ -24,7 +53,7 @@ const SigninSchema = z.object({
 export interface AuthResponse {
   success: boolean;
   message?: string;
-  user?: Omit<User, "password_hash">;
+  user?: Omit<StoredUser, "password_hash">;
   token?: string;
 }
 
@@ -34,9 +63,9 @@ export const handleSignup: RequestHandler = async (req, res) => {
     const data = SignupSchema.parse(req.body);
 
     // Check if user already exists
-    const existingUser = db
-      .prepare("SELECT id FROM users WHERE email = ? OR username = ?")
-      .get(data.email, data.username);
+    const existingUser = Array.from(users.values()).find(
+      (u) => u.email === data.email || u.username === data.username,
+    );
 
     if (existingUser) {
       return res.status(400).json({
@@ -46,49 +75,39 @@ export const handleSignup: RequestHandler = async (req, res) => {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const passwordHash = hashPassword(data.password);
 
     // Create user
-    const stmt = db.prepare(`
-      INSERT INTO users (username, email, password_hash, full_name)
-      VALUES (?, ?, ?, ?)
-    `);
+    const userId = nextUserId++;
+    const user: StoredUser = {
+      id: userId,
+      username: data.username,
+      email: data.email,
+      password_hash: passwordHash,
+      full_name: data.fullName || null,
+      carbon_credits: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    const result = stmt.run(
-      data.username,
-      data.email,
-      passwordHash,
-      data.fullName || null,
-    );
-
-    const userId = (result.lastInsertRowid as number) || 0;
-
-    // Get the created user
-    const user = db
-      .prepare(
-        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?",
-      )
-      .get(userId) as Omit<User, "password_hash"> | undefined;
-
-    if (!user) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to create user",
-      } as AuthResponse);
-    }
+    users.set(userId, user);
 
     // Create session token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    db.prepare(
-      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
-    ).run(userId, token, expiresAt.toISOString());
+    sessions.set(token, {
+      user_id: userId,
+      token,
+      expires_at: expiresAt.toISOString(),
+    });
+
+    const { password_hash, ...userWithoutPassword } = user;
 
     return res.status(201).json({
       success: true,
       message: "User created successfully",
-      user,
+      user: userWithoutPassword,
       token,
     } as AuthResponse);
   } catch (error) {
@@ -112,9 +131,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     const data = SigninSchema.parse(req.body);
 
     // Find user by email
-    const user = db
-      .prepare("SELECT id, password_hash FROM users WHERE email = ?")
-      .get(data.email) as { id: number; password_hash: string } | undefined;
+    const user = Array.from(users.values()).find((u) => u.email === data.email);
 
     if (!user) {
       return res.status(401).json({
@@ -124,10 +141,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(
-      data.password,
-      user.password_hash,
-    );
+    const isValidPassword = verifyPassword(data.password, user.password_hash);
 
     if (!isValidPassword) {
       return res.status(401).json({
@@ -136,32 +150,22 @@ export const handleSignin: RequestHandler = async (req, res) => {
       } as AuthResponse);
     }
 
-    // Get full user data
-    const fullUser = db
-      .prepare(
-        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?",
-      )
-      .get(user.id) as Omit<User, "password_hash"> | undefined;
-
-    if (!fullUser) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to retrieve user",
-      } as AuthResponse);
-    }
-
     // Create session token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    db.prepare(
-      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
-    ).run(user.id, token, expiresAt.toISOString());
+    sessions.set(token, {
+      user_id: user.id,
+      token,
+      expires_at: expiresAt.toISOString(),
+    });
+
+    const { password_hash, ...userWithoutPassword } = user;
 
     return res.status(200).json({
       success: true,
       message: "Signed in successfully",
-      user: fullUser,
+      user: userWithoutPassword,
       token,
     } as AuthResponse);
   } catch (error) {
@@ -192,11 +196,7 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
     }
 
     // Check if token is valid and not expired
-    const session = db
-      .prepare(
-        `SELECT user_id, expires_at FROM sessions WHERE token = ? AND expires_at > datetime('now')`,
-      )
-      .get(token) as { user_id: number; expires_at: string } | undefined;
+    const session = sessions.get(token);
 
     if (!session) {
       return res.status(401).json({
@@ -205,12 +205,17 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
       } as AuthResponse);
     }
 
+    // Check if token is expired
+    if (new Date(session.expires_at) < new Date()) {
+      sessions.delete(token);
+      return res.status(401).json({
+        success: false,
+        message: "Token expired",
+      } as AuthResponse);
+    }
+
     // Get user data
-    const user = db
-      .prepare(
-        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?",
-      )
-      .get(session.user_id) as Omit<User, "password_hash"> | undefined;
+    const user = users.get(session.user_id);
 
     if (!user) {
       return res.status(401).json({
@@ -219,9 +224,11 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
       } as AuthResponse);
     }
 
+    const { password_hash, ...userWithoutPassword } = user;
+
     return res.status(200).json({
       success: true,
-      user,
+      user: userWithoutPassword,
       token,
     } as AuthResponse);
   } catch (error) {
@@ -246,7 +253,7 @@ export const handleLogout: RequestHandler = (req, res) => {
     }
 
     // Delete session
-    db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+    sessions.delete(token);
 
     return res.status(200).json({
       success: true,
