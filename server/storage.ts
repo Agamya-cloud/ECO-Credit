@@ -96,7 +96,14 @@ export const usersStorage = {
   },
 
   getByEmail(email: string): StoredUser | undefined {
-    return this.getAll().find((u) => u.email === email);
+    try {
+      const users = this.getAll();
+      const user = users.find((u) => u.email === email);
+      return user;
+    } catch (error) {
+      console.error("Error retrieving user by email:", error);
+      return undefined;
+    }
   },
 
   getByUsername(username: string): StoredUser | undefined {
