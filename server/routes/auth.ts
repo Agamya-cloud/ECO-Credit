@@ -48,12 +48,14 @@ export interface AuthResponse {
 export const handleSignup: RequestHandler = async (req, res) => {
   try {
     const data = SignupSchema.parse(req.body);
+    console.log(`[SIGNUP] New signup request for email: ${data.email}`);
 
     // Check if user already exists
     const existingUserByEmail = usersStorage.getByEmail(data.email);
     const existingUserByUsername = usersStorage.getByUsername(data.username);
 
     if (existingUserByEmail || existingUserByUsername) {
+      console.log(`[SIGNUP] User already exists: ${data.email}`);
       return res.status(400).json({
         success: false,
         message: "Email or username already exists",
@@ -62,6 +64,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
 
     // Hash password
     const passwordHash = hashPassword(data.password);
+    console.log(`[SIGNUP] Password hashed for: ${data.email}`);
 
     // Create user
     const userId = usersStorage.getNextId();
@@ -78,6 +81,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
     };
 
     usersStorage.save(user);
+    console.log(`[SIGNUP] User saved successfully with ID: ${userId}`);
 
     // Create session token
     const token = crypto.randomBytes(32).toString("hex");
