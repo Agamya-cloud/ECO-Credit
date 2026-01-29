@@ -12,6 +12,7 @@ import {
   handleBillingUpload,
   handleGetBillingHistory,
   handleGetLeaderboard,
+  handleGetUserDashboard,
 } from "./routes/billing";
 
 export function createServer() {
