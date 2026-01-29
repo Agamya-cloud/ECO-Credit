@@ -25,11 +25,11 @@ export const sessions: Map<string, Session> = new Map();
 export let nextUserId = 1;
 
 // Simple password hashing (not secure - for demo only)
-function hashPassword(password: string): string {
+export function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-function verifyPassword(password: string, hash: string): boolean {
+export function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash;
 }
 
