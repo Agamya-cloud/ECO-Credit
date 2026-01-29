@@ -1,33 +1,6 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-import { users, sessions } from "./auth";
-
-export interface BillingEntry {
-  id: number;
-  user_id: number;
-  energy_type: string;
-  units_consumed: number;
-  carbon_emissions: number;
-  credits_earned: number;
-  date: string;
-  created_at: string;
-}
-
-interface LeaderboardUser {
-  rank: number;
-  id: number;
-  username: string;
-  full_name: string | null;
-  credits: number;
-  reduction: number;
-  badge: "gold" | "silver" | "bronze" | null;
-}
-
-// In-memory storage for billing data
-// This Map stores billing entries keyed by user_id
-// Data persists across all users and sessions (until server restart)
-const billingData: Map<number, BillingEntry[]> = new Map();
-let nextBillingId = 1;
+import { usersStorage, billingStorage, sessionsStorage } from "../storage";
 
 // Carbon conversion factors (kg CO2 per unit)
 const CARBON_FACTORS: Record<string, number> = {
@@ -37,7 +10,7 @@ const CARBON_FACTORS: Record<string, number> = {
   "Gasoline (gallons)": 8.9,
 };
 
-// Credits conversion (1 kg CO2 reduction = 1 credit, but some bonuses)
+// Credits conversion (1 kg CO2 reduction = 1 credit)
 const CREDITS_MULTIPLIER = 1;
 
 const BillingSchema = z.object({
@@ -49,7 +22,16 @@ const BillingSchema = z.object({
 interface BillingResponse {
   success: boolean;
   message?: string;
-  data?: BillingEntry;
+  data?: {
+    id: number;
+    user_id: number;
+    energy_type: string;
+    units_consumed: number;
+    carbon_emissions: number;
+    credits_earned: number;
+    date: string;
+    created_at: string;
+  };
 }
 
 // Upload billing data
@@ -65,7 +47,7 @@ export const handleBillingUpload: RequestHandler = (req, res) => {
     }
 
     // Verify token
-    const session = sessions.get(token);
+    const session = sessionsStorage.get(token);
     if (!session) {
       return res.status(401).json({
         success: false,
@@ -75,7 +57,7 @@ export const handleBillingUpload: RequestHandler = (req, res) => {
 
     const data = BillingSchema.parse(req.body);
     const userId = session.user_id;
-    const user = users.get(userId);
+    const user = usersStorage.getById(userId);
 
     if (!user) {
       return res.status(404).json({
@@ -90,8 +72,9 @@ export const handleBillingUpload: RequestHandler = (req, res) => {
     const creditsEarned = Math.round(carbonEmissions * CREDITS_MULTIPLIER);
 
     // Create billing entry
-    const billingEntry: BillingEntry = {
-      id: nextBillingId++,
+    const billingId = billingStorage.getNextId();
+    const billingEntry = {
+      id: billingId,
       user_id: userId,
       energy_type: data.energy_type,
       units_consumed: data.units_consumed,
@@ -102,14 +85,12 @@ export const handleBillingUpload: RequestHandler = (req, res) => {
     };
 
     // Store billing data
-    if (!billingData.has(userId)) {
-      billingData.set(userId, []);
-    }
-    billingData.get(userId)!.push(billingEntry);
+    billingStorage.save(billingEntry);
 
     // Update user's carbon credits
     user.carbon_credits += creditsEarned;
     user.updated_at = new Date().toISOString();
+    usersStorage.save(user);
 
     return res.status(201).json({
       success: true,
@@ -143,7 +124,7 @@ export const handleGetBillingHistory: RequestHandler = (req, res) => {
       });
     }
 
-    const session = sessions.get(token);
+    const session = sessionsStorage.get(token);
     if (!session) {
       return res.status(401).json({
         success: false,
@@ -151,7 +132,7 @@ export const handleGetBillingHistory: RequestHandler = (req, res) => {
       });
     }
 
-    const userBillingData = billingData.get(session.user_id) || [];
+    const userBillingData = billingStorage.getByUserId(session.user_id);
 
     return res.status(200).json({
       success: true,
@@ -178,7 +159,7 @@ export const handleGetUserDashboard: RequestHandler = (req, res) => {
       });
     }
 
-    const session = sessions.get(token);
+    const session = sessionsStorage.get(token);
     if (!session) {
       return res.status(401).json({
         success: false,
@@ -186,7 +167,7 @@ export const handleGetUserDashboard: RequestHandler = (req, res) => {
       });
     }
 
-    const user = users.get(session.user_id);
+    const user = usersStorage.getById(session.user_id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -194,7 +175,7 @@ export const handleGetUserDashboard: RequestHandler = (req, res) => {
       });
     }
 
-    const userBillingData = billingData.get(session.user_id) || [];
+    const userBillingData = billingStorage.getByUserId(session.user_id);
 
     // Calculate statistics
     const totalConsumption = userBillingData.reduce(
@@ -254,7 +235,7 @@ export const handleGetUserDashboard: RequestHandler = (req, res) => {
           totalConsumption,
           totalEmissions,
           totalCredits,
-          recyclingContributions: 0, // Not tracked yet
+          recyclingContributions: 0,
         },
         monthlyData: monthlyChartData,
         recentUploads: userBillingData.slice(-5).reverse(),
@@ -272,15 +253,18 @@ export const handleGetUserDashboard: RequestHandler = (req, res) => {
 // Get leaderboard data
 export const handleGetLeaderboard: RequestHandler = (_req, res) => {
   try {
-    // Convert users to leaderboard format
-    const leaderboardUsers: LeaderboardUser[] = Array.from(users.values())
+    // Get all users
+    const allUsers = usersStorage.getAll();
+
+    // Convert to leaderboard format
+    const leaderboardUsers = allUsers
       .map((user) => ({
         rank: 0,
         id: user.id,
         username: user.username,
         full_name: user.full_name,
         credits: user.carbon_credits,
-        reduction: Math.round(user.carbon_credits * 0.5), // Rough estimate: 1 credit = 0.5 kg CO2 reduction
+        reduction: Math.round(user.carbon_credits * 0.5),
         badge: null as "gold" | "silver" | "bronze" | null,
       }))
       .sort((a, b) => b.credits - a.credits);
