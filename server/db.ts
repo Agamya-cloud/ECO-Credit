@@ -75,3 +75,14 @@ export interface Session {
   created_at: string;
   expires_at: string;
 }
+
+export interface BillingData {
+  id: number;
+  user_id: number;
+  energy_type: string;
+  units_consumed: number;
+  carbon_emissions: number;
+  credits_earned: number;
+  date: string;
+  created_at: string;
+}
