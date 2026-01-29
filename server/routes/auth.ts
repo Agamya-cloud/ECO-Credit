@@ -20,7 +20,10 @@ interface Session {
   expires_at: string;
 }
 
+// In-memory storage - persists across all users and sessions (until server restart)
+// Every user who signs up is stored here with their carbon credits
 export const users: Map<number, StoredUser> = new Map();
+// Session tokens keyed by token string
 export const sessions: Map<string, Session> = new Map();
 export let nextUserId = 1;
 
