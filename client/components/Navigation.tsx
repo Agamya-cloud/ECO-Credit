@@ -128,7 +128,9 @@ export default function Navigation() {
             {isAuthenticated ? (
               <>
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <p className="font-semibold text-gray-900">{user?.username}</p>
+                  <p className="font-semibold text-gray-900">
+                    {user?.username}
+                  </p>
                   <p className="text-sm text-gray-600">{user?.email}</p>
                 </div>
                 {navItems.slice(1, -1).map((item) => (

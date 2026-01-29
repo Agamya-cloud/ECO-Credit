@@ -55,7 +55,7 @@ if (!existingDemo) {
   const hashedPassword = bcrypt.hashSync("password123", 10);
   const result = db
     .prepare(
-      "INSERT INTO users (username, email, password_hash, full_name, carbon_credits) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO users (username, email, password_hash, full_name, carbon_credits) VALUES (?, ?, ?, ?, ?)",
     )
     .run("demouser", "demo@example.com", hashedPassword, "Demo User", 2450);
 
@@ -64,15 +64,15 @@ if (!existingDemo) {
   // Add sample billing data for demo user
   if (demoUserId) {
     db.prepare(
-      "INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date) VALUES (?, ?, ?, ?, ?, ?)",
     ).run(demoUserId, "Electricity (kWh)", 450, 180, 450, "2024-06-15");
 
     db.prepare(
-      "INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date) VALUES (?, ?, ?, ?, ?, ?)",
     ).run(demoUserId, "Electricity (kWh)", 520, 208, 520, "2024-05-15");
 
     db.prepare(
-      "INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date) VALUES (?, ?, ?, ?, ?, ?)",
     ).run(demoUserId, "Natural Gas (therms)", 12, 140, 280, "2024-04-15");
   }
 }

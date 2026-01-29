@@ -25,11 +25,11 @@ interface AuthContextType {
     username: string,
     email: string,
     password: string,
-    fullName?: string
+    fullName?: string,
   ) => Promise<{ success: boolean; message?: string }>;
   signin: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   verifyToken: () => Promise<boolean>;
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     username: string,
     email: string,
     password: string,
-    fullName?: string
+    fullName?: string,
   ) => {
     try {
       const response = await fetch("/api/auth/signup", {

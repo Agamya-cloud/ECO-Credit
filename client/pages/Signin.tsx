@@ -46,7 +46,8 @@ export default function Signin() {
 
       if (result.success) {
         // Redirect to dashboard or the page they came from
-        const from = (location.state as { from?: string })?.from || "/dashboard";
+        const from =
+          (location.state as { from?: string })?.from || "/dashboard";
         navigate(from);
       } else {
         setApiError(result.message || "Sign in failed");
@@ -76,8 +77,12 @@ export default function Signin() {
               EcoCredit
             </span>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to continue tracking your impact</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-gray-600">
+            Sign in to continue tracking your impact
+          </p>
         </div>
 
         {/* Form Card */}
@@ -175,7 +180,9 @@ export default function Signin() {
         {/* Demo Info */}
         <div className="mt-8 p-4 bg-white rounded-lg shadow-sm border border-eco-green-light">
           <p className="text-sm text-gray-600 mb-2">
-            <span className="font-semibold text-gray-900">Demo Credentials:</span>
+            <span className="font-semibold text-gray-900">
+              Demo Credentials:
+            </span>
           </p>
           <p className="text-xs text-gray-500">
             Email: demo@example.com

@@ -14,11 +14,36 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("overview");
 
   const creditHistory = [
-    { date: "2024-06-15", type: "Recycling", amount: 150, desc: "Plastic recycling" },
-    { date: "2024-06-10", type: "Energy", amount: 120, desc: "Monthly energy reduction" },
-    { date: "2024-06-05", type: "Recycling", amount: 75, desc: "Paper recycling" },
-    { date: "2024-05-28", type: "Challenge", amount: 200, desc: "30-day challenge" },
-    { date: "2024-05-15", type: "Energy", amount: 85, desc: "Weekly energy savings" },
+    {
+      date: "2024-06-15",
+      type: "Recycling",
+      amount: 150,
+      desc: "Plastic recycling",
+    },
+    {
+      date: "2024-06-10",
+      type: "Energy",
+      amount: 120,
+      desc: "Monthly energy reduction",
+    },
+    {
+      date: "2024-06-05",
+      type: "Recycling",
+      amount: 75,
+      desc: "Paper recycling",
+    },
+    {
+      date: "2024-05-28",
+      type: "Challenge",
+      amount: 200,
+      desc: "30-day challenge",
+    },
+    {
+      date: "2024-05-15",
+      type: "Energy",
+      amount: 85,
+      desc: "Weekly energy savings",
+    },
   ];
 
   const recyclingHistory = [
@@ -50,7 +75,9 @@ export default function Profile() {
       <section className="bg-gradient-to-r from-eco-green to-eco-blue py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold text-white mb-2">Your Profile</h1>
-          <p className="text-white/90">Manage your account and track your sustainability journey</p>
+          <p className="text-white/90">
+            Manage your account and track your sustainability journey
+          </p>
         </div>
       </section>
 
@@ -143,13 +170,21 @@ export default function Profile() {
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                   {[
-                    { icon: "🌱", title: "Getting Started", desc: "First submission" },
+                    {
+                      icon: "🌱",
+                      title: "Getting Started",
+                      desc: "First submission",
+                    },
                     {
                       icon: "♻️",
                       title: "Recycling Champion",
                       desc: "500+ kg recycled",
                     },
-                    { icon: "⚡", title: "Energy Saver", desc: "1000 kWh tracked" },
+                    {
+                      icon: "⚡",
+                      title: "Energy Saver",
+                      desc: "1000 kWh tracked",
+                    },
                     {
                       icon: "🏆",
                       title: "Top 10",
@@ -180,7 +215,10 @@ export default function Profile() {
                 <h3 className="text-xl font-bold mb-4">Sustainability Score</h3>
                 <div className="text-6xl font-bold mb-2">8.5</div>
                 <div className="w-full bg-white/20 rounded-full h-2 mb-4">
-                  <div className="bg-white h-2 rounded-full" style={{ width: "85%" }}></div>
+                  <div
+                    className="bg-white h-2 rounded-full"
+                    style={{ width: "85%" }}
+                  ></div>
                 </div>
                 <p className="text-white/90 text-sm">
                   You're doing amazing! Keep up the great work.
@@ -188,7 +226,9 @@ export default function Profile() {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm p-6">
-                <h4 className="font-bold text-gray-900 mb-4">Score Breakdown</h4>
+                <h4 className="font-bold text-gray-900 mb-4">
+                  Score Breakdown
+                </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-700">Energy Tracking</span>
@@ -211,7 +251,9 @@ export default function Profile() {
         {activeTab === "credits" && (
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-8 border-b border-gray-200">
-              <h3 className="text-2xl font-bold text-gray-900">Credit History</h3>
+              <h3 className="text-2xl font-bold text-gray-900">
+                Credit History
+              </h3>
               <p className="text-gray-600 mt-1">
                 Track all your earned carbon credits
               </p>

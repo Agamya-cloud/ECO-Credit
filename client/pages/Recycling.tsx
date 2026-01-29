@@ -170,10 +170,34 @@ export default function Recycling() {
               </thead>
               <tbody>
                 {[
-                  { date: "2024-06-15", type: "Plastic", qty: "12 kg", credits: 600, status: "Verified" },
-                  { date: "2024-06-10", type: "E-Waste", qty: "2 kg", credits: 400, status: "Verified" },
-                  { date: "2024-06-05", type: "Paper", qty: "8 kg", credits: 600, status: "Verified" },
-                  { date: "2024-05-28", type: "Glass", qty: "15 kg", credits: 900, status: "Pending" },
+                  {
+                    date: "2024-06-15",
+                    type: "Plastic",
+                    qty: "12 kg",
+                    credits: 600,
+                    status: "Verified",
+                  },
+                  {
+                    date: "2024-06-10",
+                    type: "E-Waste",
+                    qty: "2 kg",
+                    credits: 400,
+                    status: "Verified",
+                  },
+                  {
+                    date: "2024-06-05",
+                    type: "Paper",
+                    qty: "8 kg",
+                    credits: 600,
+                    status: "Verified",
+                  },
+                  {
+                    date: "2024-05-28",
+                    type: "Glass",
+                    qty: "15 kg",
+                    credits: 900,
+                    status: "Pending",
+                  },
                 ].map((row, idx) => (
                   <tr
                     key={idx}

@@ -57,7 +57,7 @@ export default function Signup() {
         formData.username,
         formData.email,
         formData.password,
-        formData.fullName || undefined
+        formData.fullName || undefined,
       );
 
       if (result.success) {
@@ -208,7 +208,9 @@ export default function Signup() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-eco-green focus:border-transparent pr-10 ${
-                    errors.confirmPassword ? "border-red-500" : "border-gray-300"
+                    errors.confirmPassword
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                 />
                 <button

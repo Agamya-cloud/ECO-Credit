@@ -28,7 +28,8 @@ const NotFound = () => {
             Page not found
           </p>
           <p className="text-gray-600 mb-8">
-            The page you're looking for doesn't exist. It might have been moved or deleted.
+            The page you're looking for doesn't exist. It might have been moved
+            or deleted.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

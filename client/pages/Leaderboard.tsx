@@ -168,7 +168,9 @@ export default function Leaderboard() {
               </div>
               <h3 className="text-2xl font-bold mb-4">{user.name}</h3>
               <div className="space-y-2 text-white/90">
-                <p className="text-3xl font-bold">{user.credits.toLocaleString()} Credits</p>
+                <p className="text-3xl font-bold">
+                  {user.credits.toLocaleString()} Credits
+                </p>
                 <p>{user.reduction} kg CO₂ Reduced</p>
               </div>
             </div>

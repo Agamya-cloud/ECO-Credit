@@ -17,7 +17,8 @@ export default function Index() {
     {
       icon: BarChart3,
       title: "Track Emissions",
-      description: "Monitor your electricity and fuel usage with detailed analytics",
+      description:
+        "Monitor your electricity and fuel usage with detailed analytics",
     },
     {
       icon: Zap,
@@ -199,8 +200,7 @@ export default function Index() {
               {
                 number: "1",
                 title: "Upload Data",
-                description:
-                  "Submit your electricity and fuel billing records",
+                description: "Submit your electricity and fuel billing records",
               },
               {
                 number: "2",
@@ -211,8 +211,7 @@ export default function Index() {
               {
                 number: "3",
                 title: "Track Reductions",
-                description:
-                  "Monitor your progress as you reduce consumption",
+                description: "Monitor your progress as you reduce consumption",
               },
               {
                 number: "4",

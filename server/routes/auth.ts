@@ -6,7 +6,11 @@ import crypto from "crypto";
 
 // Validation schemas
 const SignupSchema = z.object({
-  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_-]+$/),
+  username: z
+    .string()
+    .min(3)
+    .max(20)
+    .regex(/^[a-zA-Z0-9_-]+$/),
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().optional(),
@@ -54,7 +58,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
       data.username,
       data.email,
       passwordHash,
-      data.fullName || null
+      data.fullName || null,
     );
 
     const userId = (result.lastInsertRowid as number) || 0;
@@ -62,7 +66,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
     // Get the created user
     const user = db
       .prepare(
-        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?"
+        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?",
       )
       .get(userId) as Omit<User, "password_hash"> | undefined;
 
@@ -78,7 +82,7 @@ export const handleSignup: RequestHandler = async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     db.prepare(
-      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)"
+      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
     ).run(userId, token, expiresAt.toISOString());
 
     return res.status(201).json({
@@ -110,9 +114,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     // Find user by email
     const user = db
       .prepare("SELECT id, password_hash FROM users WHERE email = ?")
-      .get(data.email) as
-      | { id: number; password_hash: string }
-      | undefined;
+      .get(data.email) as { id: number; password_hash: string } | undefined;
 
     if (!user) {
       return res.status(401).json({
@@ -124,7 +126,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     // Verify password
     const isValidPassword = await bcrypt.compare(
       data.password,
-      user.password_hash
+      user.password_hash,
     );
 
     if (!isValidPassword) {
@@ -137,7 +139,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     // Get full user data
     const fullUser = db
       .prepare(
-        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?"
+        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?",
       )
       .get(user.id) as Omit<User, "password_hash"> | undefined;
 
@@ -153,7 +155,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     db.prepare(
-      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)"
+      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
     ).run(user.id, token, expiresAt.toISOString());
 
     return res.status(200).json({
@@ -192,7 +194,7 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
     // Check if token is valid and not expired
     const session = db
       .prepare(
-        `SELECT user_id, expires_at FROM sessions WHERE token = ? AND expires_at > datetime('now')`
+        `SELECT user_id, expires_at FROM sessions WHERE token = ? AND expires_at > datetime('now')`,
       )
       .get(token) as { user_id: number; expires_at: string } | undefined;
 
@@ -206,7 +208,7 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
     // Get user data
     const user = db
       .prepare(
-        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?"
+        "SELECT id, username, email, full_name, carbon_credits, created_at, updated_at FROM users WHERE id = ?",
       )
       .get(session.user_id) as Omit<User, "password_hash"> | undefined;
 

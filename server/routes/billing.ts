@@ -64,14 +64,13 @@ export const handleUploadBillingData: RequestHandler = (req, res) => {
       data.unitsConsumed,
       carbonEmissions,
       creditsEarned,
-      data.date
+      data.date,
     );
 
     // Update user's carbon credits
-    db.prepare("UPDATE users SET carbon_credits = carbon_credits + ? WHERE id = ?").run(
-      creditsEarned,
-      userId
-    );
+    db.prepare(
+      "UPDATE users SET carbon_credits = carbon_credits + ? WHERE id = ?",
+    ).run(creditsEarned, userId);
 
     // Get the saved billing data
     const billingRecord = db
@@ -112,7 +111,9 @@ export const handleGetBillingHistory: RequestHandler = (req, res) => {
     }
 
     const billingHistory = db
-      .prepare("SELECT * FROM billing_data WHERE user_id = ? ORDER BY date DESC")
+      .prepare(
+        "SELECT * FROM billing_data WHERE user_id = ? ORDER BY date DESC",
+      )
       .all(userId) as BillingData[];
 
     return res.status(200).json({
@@ -146,16 +147,16 @@ export const handleGetLeaderboard: RequestHandler = (req, res) => {
         GROUP BY u.id
         ORDER BY u.carbon_credits DESC
         LIMIT 100
-      `
+      `,
       )
       .all() as Array<{
-        id: number;
-        username: string;
-        full_name: string | null;
-        carbon_credits: number;
-        total_emissions: number | null;
-        submissions: number;
-      }>;
+      id: number;
+      username: string;
+      full_name: string | null;
+      carbon_credits: number;
+      total_emissions: number | null;
+      submissions: number;
+    }>;
 
     const formattedLeaderboard = leaderboard.map((user, index) => ({
       rank: index + 1,

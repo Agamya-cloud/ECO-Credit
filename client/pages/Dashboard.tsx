@@ -63,13 +63,15 @@ export default function Dashboard() {
     {
       icon: Lightbulb,
       title: "Switch to LED Lighting",
-      description: "Replace incandescent bulbs to save up to 75% on lighting energy",
+      description:
+        "Replace incandescent bulbs to save up to 75% on lighting energy",
       impact: "+45 credits",
     },
     {
       icon: Droplet,
       title: "Install a Smart Thermostat",
-      description: "Automatically optimize your home's temperature and reduce heating costs",
+      description:
+        "Automatically optimize your home's temperature and reduce heating costs",
       impact: "+120 credits",
     },
     {
@@ -97,7 +99,8 @@ export default function Dashboard() {
             Your Sustainability Dashboard
           </h1>
           <p className="text-white/90">
-            Monitor your environmental impact and track your carbon credit growth
+            Monitor your environmental impact and track your carbon credit
+            growth
           </p>
         </div>
       </section>
@@ -137,7 +140,9 @@ export default function Dashboard() {
                   </span>
                   <span className="text-gray-600 text-sm">{card.unit}</span>
                 </div>
-                <p className="text-xs text-eco-green font-medium">{card.trend}</p>
+                <p className="text-xs text-eco-green font-medium">
+                  {card.trend}
+                </p>
               </div>
             );
           })}
@@ -171,7 +176,8 @@ export default function Dashboard() {
                       key={index}
                       className="flex-1 flex flex-col items-center gap-2 group"
                     >
-                      <div className="w-full rounded-t-lg bg-eco-green-light hover:bg-eco-green-dark transition-all"
+                      <div
+                        className="w-full rounded-t-lg bg-eco-green-light hover:bg-eco-green-dark transition-all"
                         style={{
                           height: `${(data.emissions / maxEmission) * 150}px`,
                         }}
@@ -200,7 +206,8 @@ export default function Dashboard() {
                       key={index}
                       className="flex-1 flex flex-col items-center gap-2 group"
                     >
-                      <div className="w-full rounded-t-lg bg-eco-blue hover:bg-eco-blue-dark transition-all"
+                      <div
+                        className="w-full rounded-t-lg bg-eco-blue hover:bg-eco-blue-dark transition-all"
                         style={{
                           height: `${(data.credits / maxCredit) * 150}px`,
                         }}

@@ -12,7 +12,8 @@ export default function Billing() {
             Upload Billing Data
           </h1>
           <p className="text-white/90">
-            Submit your electricity and fuel billing records to calculate your carbon footprint
+            Submit your electricity and fuel billing records to calculate your
+            carbon footprint
           </p>
         </div>
       </section>
@@ -86,7 +87,8 @@ export default function Billing() {
               <FileText className="w-8 h-8 text-eco-green-dark mb-4" />
               <h3 className="font-semibold text-gray-900 mb-2">File Format</h3>
               <p className="text-sm text-gray-700">
-                Your billing data should include date, energy type, and consumption units.
+                Your billing data should include date, energy type, and
+                consumption units.
               </p>
             </div>
 
@@ -94,7 +96,8 @@ export default function Billing() {
               <AlertCircle className="w-8 h-8 text-eco-blue-dark mb-4" />
               <h3 className="font-semibold text-gray-900 mb-2">How It Works</h3>
               <p className="text-sm text-gray-700">
-                Our algorithm converts your consumption data into estimated carbon emissions.
+                Our algorithm converts your consumption data into estimated
+                carbon emissions.
               </p>
             </div>
 
