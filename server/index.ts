@@ -40,6 +40,7 @@ export function createServer() {
   // Billing routes
   app.post("/api/billing/upload", handleBillingUpload);
   app.get("/api/billing/history", handleGetBillingHistory);
+  app.get("/api/billing/dashboard", handleGetUserDashboard);
   app.get("/api/leaderboard", handleGetLeaderboard);
 
   return app;
