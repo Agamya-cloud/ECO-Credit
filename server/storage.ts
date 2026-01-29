@@ -111,19 +111,28 @@ export const usersStorage = {
   },
 
   save(user: StoredUser): void {
-    const data = JSON.parse(fs.readFileSync(usersFile, "utf-8")) as {
-      users: StoredUser[];
-      nextId: number;
-    };
-    const existingIndex = data.users.findIndex((u) => u.id === user.id);
+    try {
+      const content = fs.readFileSync(usersFile, "utf-8");
+      const data = JSON.parse(content) as {
+        users: StoredUser[];
+        nextId: number;
+      };
+      const existingIndex = data.users.findIndex((u) => u.id === user.id);
 
-    if (existingIndex >= 0) {
-      data.users[existingIndex] = user;
-    } else {
-      data.users.push(user);
+      if (existingIndex >= 0) {
+        data.users[existingIndex] = user;
+        console.log(`[STORAGE] Updated user ${user.id}`);
+      } else {
+        data.users.push(user);
+        console.log(`[STORAGE] Added new user ${user.id}: ${user.email}`);
+      }
+
+      fs.writeFileSync(usersFile, JSON.stringify(data, null, 2));
+      console.log(`[STORAGE] User file saved. Total users: ${data.users.length}`);
+    } catch (error) {
+      console.error(`[STORAGE] Error saving user: ${error}`);
+      throw error;
     }
-
-    fs.writeFileSync(usersFile, JSON.stringify(data, null, 2));
   },
 
   getNextId(): number {
