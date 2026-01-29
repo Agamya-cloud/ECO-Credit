@@ -45,19 +45,36 @@ export interface Session {
 
 // Initialize storage
 function initializeStorage() {
-  // Initialize users file
-  if (!fs.existsSync(usersFile)) {
-    fs.writeFileSync(usersFile, JSON.stringify({ users: [], nextId: 1 }));
-  }
+  try {
+    // Initialize users file
+    if (!fs.existsSync(usersFile)) {
+      fs.writeFileSync(usersFile, JSON.stringify({ users: [], nextId: 1 }, null, 2));
+    } else {
+      // Validate file can be parsed
+      const content = fs.readFileSync(usersFile, "utf-8");
+      JSON.parse(content);
+    }
 
-  // Initialize billing file
-  if (!fs.existsSync(billingFile)) {
-    fs.writeFileSync(billingFile, JSON.stringify({ entries: [], nextId: 1 }));
-  }
+    // Initialize billing file
+    if (!fs.existsSync(billingFile)) {
+      fs.writeFileSync(billingFile, JSON.stringify({ entries: [], nextId: 1 }, null, 2));
+    } else {
+      const content = fs.readFileSync(billingFile, "utf-8");
+      JSON.parse(content);
+    }
 
-  // Initialize sessions file
-  if (!fs.existsSync(sessionsFile)) {
-    fs.writeFileSync(sessionsFile, JSON.stringify({ sessions: {} }));
+    // Initialize sessions file
+    if (!fs.existsSync(sessionsFile)) {
+      fs.writeFileSync(sessionsFile, JSON.stringify({ sessions: {} }, null, 2));
+    } else {
+      const content = fs.readFileSync(sessionsFile, "utf-8");
+      JSON.parse(content);
+    }
+
+    console.log("✓ Storage initialized successfully at:", dataDir);
+  } catch (error) {
+    console.error("✗ Storage initialization error:", error);
+    process.exit(1);
   }
 }
 
