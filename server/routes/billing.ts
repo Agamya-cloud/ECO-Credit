@@ -24,6 +24,8 @@ interface LeaderboardUser {
 }
 
 // In-memory storage for billing data
+// This Map stores billing entries keyed by user_id
+// Data persists across all users and sessions (until server restart)
 const billingData: Map<number, BillingEntry[]> = new Map();
 let nextBillingId = 1;
 
