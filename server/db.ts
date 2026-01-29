@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
+import bcrypt from "bcrypt";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, "..", "ecocredit.db");
@@ -32,6 +33,18 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
+
+// Add demo user if it doesn't exist
+const existingDemo = db
+  .prepare("SELECT id FROM users WHERE email = ?")
+  .get("demo@example.com");
+
+if (!existingDemo) {
+  const hashedPassword = bcrypt.hashSync("password123", 10);
+  db.prepare(
+    "INSERT INTO users (username, email, password_hash, full_name, carbon_credits) VALUES (?, ?, ?, ?, ?)"
+  ).run("demouser", "demo@example.com", hashedPassword, "Demo User", 1500);
+}
 
 export interface User {
   id: number;
