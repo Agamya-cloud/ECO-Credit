@@ -20,9 +20,9 @@ interface Session {
   expires_at: string;
 }
 
-const users: Map<number, StoredUser> = new Map();
-const sessions: Map<string, Session> = new Map();
-let nextUserId = 1;
+export const users: Map<number, StoredUser> = new Map();
+export const sessions: Map<string, Session> = new Map();
+export let nextUserId = 1;
 
 // Simple password hashing (not secure - for demo only)
 function hashPassword(password: string): string {
