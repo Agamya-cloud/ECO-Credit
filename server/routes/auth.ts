@@ -1,31 +1,7 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
 import crypto from "crypto";
-
-// In-memory store for demo purposes
-interface StoredUser {
-  id: number;
-  username: string;
-  email: string;
-  password_hash: string;
-  full_name: string | null;
-  carbon_credits: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Session {
-  user_id: number;
-  token: string;
-  expires_at: string;
-}
-
-// In-memory storage - persists across all users and sessions (until server restart)
-// Every user who signs up is stored here with their carbon credits
-export const users: Map<number, StoredUser> = new Map();
-// Session tokens keyed by token string
-export const sessions: Map<string, Session> = new Map();
-export let nextUserId = 1;
+import { usersStorage, sessionsStorage } from "../storage";
 
 // Simple password hashing (not secure - for demo only)
 export function hashPassword(password: string): string {
@@ -56,7 +32,15 @@ const SigninSchema = z.object({
 export interface AuthResponse {
   success: boolean;
   message?: string;
-  user?: Omit<StoredUser, "password_hash">;
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+    full_name: string | null;
+    carbon_credits: number;
+    created_at: string;
+    updated_at: string;
+  };
   token?: string;
 }
 
@@ -66,11 +50,10 @@ export const handleSignup: RequestHandler = async (req, res) => {
     const data = SignupSchema.parse(req.body);
 
     // Check if user already exists
-    const existingUser = Array.from(users.values()).find(
-      (u) => u.email === data.email || u.username === data.username,
-    );
+    const existingUserByEmail = usersStorage.getByEmail(data.email);
+    const existingUserByUsername = usersStorage.getByUsername(data.username);
 
-    if (existingUser) {
+    if (existingUserByEmail || existingUserByUsername) {
       return res.status(400).json({
         success: false,
         message: "Email or username already exists",
@@ -81,25 +64,26 @@ export const handleSignup: RequestHandler = async (req, res) => {
     const passwordHash = hashPassword(data.password);
 
     // Create user
-    const userId = nextUserId++;
-    const user: StoredUser = {
+    const userId = usersStorage.getNextId();
+    const now = new Date().toISOString();
+    const user = {
       id: userId,
       username: data.username,
       email: data.email,
       password_hash: passwordHash,
       full_name: data.fullName || null,
       carbon_credits: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
 
-    users.set(userId, user);
+    usersStorage.save(user);
 
     // Create session token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    sessions.set(token, {
+    sessionsStorage.set(token, {
       user_id: userId,
       token,
       expires_at: expiresAt.toISOString(),
@@ -134,7 +118,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     const data = SigninSchema.parse(req.body);
 
     // Find user by email
-    const user = Array.from(users.values()).find((u) => u.email === data.email);
+    const user = usersStorage.getByEmail(data.email);
 
     if (!user) {
       return res.status(401).json({
@@ -157,7 +141,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    sessions.set(token, {
+    sessionsStorage.set(token, {
       user_id: user.id,
       token,
       expires_at: expiresAt.toISOString(),
@@ -199,7 +183,7 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
     }
 
     // Check if token is valid and not expired
-    const session = sessions.get(token);
+    const session = sessionsStorage.get(token);
 
     if (!session) {
       return res.status(401).json({
@@ -210,7 +194,7 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
 
     // Check if token is expired
     if (new Date(session.expires_at) < new Date()) {
-      sessions.delete(token);
+      sessionsStorage.delete(token);
       return res.status(401).json({
         success: false,
         message: "Token expired",
@@ -218,7 +202,7 @@ export const handleVerifyToken: RequestHandler = (req, res) => {
     }
 
     // Get user data
-    const user = users.get(session.user_id);
+    const user = usersStorage.getById(session.user_id);
 
     if (!user) {
       return res.status(401).json({
@@ -256,7 +240,7 @@ export const handleLogout: RequestHandler = (req, res) => {
     }
 
     // Delete session
-    sessions.delete(token);
+    sessionsStorage.delete(token);
 
     return res.status(200).json({
       success: true,
