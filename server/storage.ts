@@ -82,11 +82,13 @@ function initializeStorage() {
 export const usersStorage = {
   getAll(): StoredUser[] {
     try {
-      const data = JSON.parse(fs.readFileSync(usersFile, "utf-8")) as {
+      const content = fs.readFileSync(usersFile, "utf-8");
+      const data = JSON.parse(content) as {
         users: StoredUser[];
       };
       return data.users;
-    } catch {
+    } catch (error) {
+      console.error(`[STORAGE] Error reading users: ${error}`);
       return [];
     }
   },
