@@ -8,6 +8,11 @@ import {
   handleVerifyToken,
   handleLogout,
 } from "./routes/auth";
+import {
+  handleBillingUpload,
+  handleGetBillingHistory,
+  handleGetLeaderboard,
+} from "./routes/billing";
 
 export function createServer() {
   const app = express();
