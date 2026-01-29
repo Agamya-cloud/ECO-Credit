@@ -1,88 +1,118 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-import { db, type BillingData } from "../db";
+import { users, sessions } from "./auth";
 
-// Emission factors for different energy types
-const emissionFactors: Record<string, number> = {
-  "Electricity (kWh)": 0.4, // kg CO2 per kWh
-  "Natural Gas (therms)": 11.7, // kg CO2 per therm
-  "Fuel Oil (gallons)": 10.15, // kg CO2 per gallon
-  "Gasoline (gallons)": 8.89, // kg CO2 per gallon
+export interface BillingEntry {
+  id: number;
+  user_id: number;
+  energy_type: string;
+  units_consumed: number;
+  carbon_emissions: number;
+  credits_earned: number;
+  date: string;
+  created_at: string;
+}
+
+interface LeaderboardUser {
+  rank: number;
+  id: number;
+  username: string;
+  full_name: string | null;
+  credits: number;
+  reduction: number;
+  badge: "gold" | "silver" | "bronze" | null;
+}
+
+// In-memory storage for billing data
+const billingData: Map<number, BillingEntry[]> = new Map();
+let nextBillingId = 1;
+
+// Carbon conversion factors (kg CO2 per unit)
+const CARBON_FACTORS: Record<string, number> = {
+  "Electricity (kWh)": 0.4,
+  "Natural Gas (therms)": 5.3,
+  "Fuel Oil (gallons)": 10.2,
+  "Gasoline (gallons)": 8.9,
 };
 
-// Carbon credits per kg of CO2 (100 credits per kg)
-const CREDITS_PER_KG_CO2 = 100;
+// Credits conversion (1 kg CO2 reduction = 1 credit, but some bonuses)
+const CREDITS_MULTIPLIER = 1;
 
-const BillingDataSchema = z.object({
-  energyType: z.string(),
-  unitsConsumed: z.number().positive(),
+const BillingSchema = z.object({
+  energy_type: z.string(),
+  units_consumed: z.number().positive(),
   date: z.string(),
 });
 
-export interface BillingResponse {
+interface BillingResponse {
   success: boolean;
   message?: string;
-  billingData?: BillingData;
-  carbonEmissions?: number;
-  creditsEarned?: number;
+  data?: BillingEntry;
 }
 
-// Save billing data
-export const handleUploadBillingData: RequestHandler = (req, res) => {
+// Upload billing data
+export const handleBillingUpload: RequestHandler = (req, res) => {
   try {
-    const userId = (req as any).userId; // Assumes auth middleware sets this
-    if (!userId) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized",
+        message: "No token provided",
       } as BillingResponse);
     }
 
-    const data = BillingDataSchema.parse(req.body);
+    // Verify token
+    const session = sessions.get(token);
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      } as BillingResponse);
+    }
+
+    const data = BillingSchema.parse(req.body);
+    const userId = session.user_id;
+    const user = users.get(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      } as BillingResponse);
+    }
 
     // Calculate carbon emissions
-    const emissionFactor = emissionFactors[data.energyType];
-    if (!emissionFactor) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid energy type",
-      } as BillingResponse);
+    const carbonFactor = CARBON_FACTORS[data.energy_type] || 0.5;
+    const carbonEmissions = data.units_consumed * carbonFactor;
+    const creditsEarned = Math.round(carbonEmissions * CREDITS_MULTIPLIER);
+
+    // Create billing entry
+    const billingEntry: BillingEntry = {
+      id: nextBillingId++,
+      user_id: userId,
+      energy_type: data.energy_type,
+      units_consumed: data.units_consumed,
+      carbon_emissions: carbonEmissions,
+      credits_earned: creditsEarned,
+      date: data.date,
+      created_at: new Date().toISOString(),
+    };
+
+    // Store billing data
+    if (!billingData.has(userId)) {
+      billingData.set(userId, []);
     }
-
-    const carbonEmissions = data.unitsConsumed * emissionFactor;
-    const creditsEarned = Math.round(carbonEmissions * CREDITS_PER_KG_CO2);
-
-    // Save to database
-    const stmt = db.prepare(`
-      INSERT INTO billing_data (user_id, energy_type, units_consumed, carbon_emissions, credits_earned, date)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(
-      userId,
-      data.energyType,
-      data.unitsConsumed,
-      carbonEmissions,
-      creditsEarned,
-      data.date,
-    );
+    billingData.get(userId)!.push(billingEntry);
 
     // Update user's carbon credits
-    db.prepare(
-      "UPDATE users SET carbon_credits = carbon_credits + ? WHERE id = ?",
-    ).run(creditsEarned, userId);
-
-    // Get the saved billing data
-    const billingRecord = db
-      .prepare("SELECT * FROM billing_data WHERE id = ?")
-      .get(result.lastInsertRowid) as BillingData | undefined;
+    user.carbon_credits += creditsEarned;
+    user.updated_at = new Date().toISOString();
 
     return res.status(201).json({
       success: true,
-      message: "Billing data saved successfully",
-      billingData: billingRecord,
-      carbonEmissions,
-      creditsEarned,
+      message: "Billing data submitted successfully",
+      data: billingEntry,
     } as BillingResponse);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -91,7 +121,7 @@ export const handleUploadBillingData: RequestHandler = (req, res) => {
         message: "Invalid input",
       } as BillingResponse);
     }
-    console.error("Upload billing data error:", error);
+    console.error("Billing upload error:", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -102,75 +132,80 @@ export const handleUploadBillingData: RequestHandler = (req, res) => {
 // Get user's billing history
 export const handleGetBillingHistory: RequestHandler = (req, res) => {
   try {
-    const userId = (req as any).userId;
-    if (!userId) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized",
-      } as BillingResponse);
+        message: "No token provided",
+      });
     }
 
-    const billingHistory = db
-      .prepare(
-        "SELECT * FROM billing_data WHERE user_id = ? ORDER BY date DESC",
-      )
-      .all(userId) as BillingData[];
+    const session = sessions.get(token);
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    const userBillingData = billingData.get(session.user_id) || [];
 
     return res.status(200).json({
       success: true,
-      billingData: billingHistory,
+      data: userBillingData,
     });
   } catch (error) {
     console.error("Get billing history error:", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
-    } as BillingResponse);
+    });
   }
 };
 
 // Get leaderboard data
-export const handleGetLeaderboard: RequestHandler = (req, res) => {
+export const handleGetLeaderboard: RequestHandler = (_req, res) => {
   try {
-    const leaderboard = db
-      .prepare(
-        `
-        SELECT 
-          u.id,
-          u.username,
-          u.full_name,
-          u.carbon_credits,
-          SUM(b.carbon_emissions) as total_emissions,
-          COUNT(b.id) as submissions
-        FROM users u
-        LEFT JOIN billing_data b ON u.id = b.user_id
-        GROUP BY u.id
-        ORDER BY u.carbon_credits DESC
-        LIMIT 100
-      `,
-      )
-      .all() as Array<{
-      id: number;
-      username: string;
-      full_name: string | null;
-      carbon_credits: number;
-      total_emissions: number | null;
-      submissions: number;
-    }>;
+    // Convert users to leaderboard format
+    const leaderboardUsers: LeaderboardUser[] = Array.from(users.values())
+      .map((user) => ({
+        rank: 0,
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        credits: user.carbon_credits,
+        reduction: Math.round(user.carbon_credits * 0.5), // Rough estimate: 1 credit = 0.5 kg CO2 reduction
+        badge: null as "gold" | "silver" | "bronze" | null,
+      }))
+      .sort((a, b) => b.credits - a.credits);
 
-    const formattedLeaderboard = leaderboard.map((user, index) => ({
-      rank: index + 1,
-      id: user.id,
-      username: user.username,
-      fullName: user.full_name,
-      creditsEarned: user.carbon_credits,
-      emissionReduction: Math.round(user.total_emissions || 0),
-      submissions: user.submissions,
-    }));
+    // Assign badges to top 3
+    if (leaderboardUsers.length > 0) leaderboardUsers[0].badge = "gold";
+    if (leaderboardUsers.length > 1) leaderboardUsers[1].badge = "silver";
+    if (leaderboardUsers.length > 2) leaderboardUsers[2].badge = "bronze";
+
+    // Assign ranks
+    leaderboardUsers.forEach((user, index) => {
+      user.rank = index + 1;
+    });
+
+    // Calculate stats
+    const totalUsers = leaderboardUsers.length;
+    const totalCredits = leaderboardUsers.reduce((sum, u) => sum + u.credits, 0);
+    const totalReduction = leaderboardUsers.reduce(
+      (sum, u) => sum + u.reduction,
+      0,
+    );
 
     return res.status(200).json({
       success: true,
-      leaderboard: formattedLeaderboard,
+      data: leaderboardUsers,
+      stats: {
+        totalUsers,
+        totalCredits,
+        totalReduction,
+      },
     });
   } catch (error) {
     console.error("Get leaderboard error:", error);
