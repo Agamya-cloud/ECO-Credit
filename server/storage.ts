@@ -98,10 +98,16 @@ export const usersStorage = {
   getByEmail(email: string): StoredUser | undefined {
     try {
       const users = this.getAll();
+      console.log(`[STORAGE] Searching for user with email: ${email}. Total users in storage: ${users.length}`);
       const user = users.find((u) => u.email === email);
+      if (user) {
+        console.log(`[STORAGE] Found user: ${email}`);
+      } else {
+        console.log(`[STORAGE] User not found: ${email}`);
+      }
       return user;
     } catch (error) {
-      console.error("Error retrieving user by email:", error);
+      console.error(`[STORAGE] Error retrieving user by email: ${error}`);
       return undefined;
     }
   },
