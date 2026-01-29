@@ -246,23 +246,26 @@ export default function Index() {
             Ready to Make a Difference?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Join thousands of users tracking their environmental impact and
-            earning carbon credits
+            {isAuthenticated
+              ? "Continue tracking your environmental impact and earn more carbon credits"
+              : "Join thousands of users tracking their environmental impact and earning carbon credits"}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/dashboard"
+              to={isAuthenticated ? "/dashboard" : "/signup"}
               className="inline-flex items-center justify-center px-8 py-3 bg-white text-eco-green rounded-lg hover:bg-gray-100 transition-colors duration-200 font-semibold group"
             >
-              Start Tracking Now
+              {isAuthenticated ? "Go to Dashboard" : "Start Tracking Now"}
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-white rounded-lg hover:bg-white/10 transition-colors duration-200 font-semibold"
-            >
-              Learn More
-            </a>
+            {!isAuthenticated && (
+              <a
+                href="#features"
+                className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-white rounded-lg hover:bg-white/10 transition-colors duration-200 font-semibold"
+              >
+                Learn More
+              </a>
+            )}
           </div>
         </div>
       </section>
