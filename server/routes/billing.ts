@@ -164,6 +164,109 @@ export const handleGetBillingHistory: RequestHandler = (req, res) => {
   }
 };
 
+// Get user dashboard data
+export const handleGetUserDashboard: RequestHandler = (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided",
+      });
+    }
+
+    const session = sessions.get(token);
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    const user = users.get(session.user_id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const userBillingData = billingData.get(session.user_id) || [];
+
+    // Calculate statistics
+    const totalConsumption = userBillingData.reduce(
+      (sum, b) => sum + b.units_consumed,
+      0,
+    );
+    const totalEmissions = userBillingData.reduce(
+      (sum, b) => sum + b.carbon_emissions,
+      0,
+    );
+    const totalCredits = user.carbon_credits;
+
+    // Group billing data by month
+    const monthlyData: Record<
+      string,
+      { emissions: number; credits: number }
+    > = {};
+    userBillingData.forEach((entry) => {
+      const date = new Date(entry.date);
+      const monthKey = date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+      });
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { emissions: 0, credits: 0 };
+      }
+      monthlyData[monthKey].emissions += entry.carbon_emissions;
+      monthlyData[monthKey].credits += entry.credits_earned;
+    });
+
+    // Get last 6 months
+    const now = new Date();
+    const lastSixMonths = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      lastSixMonths.push(date.toLocaleDateString("en-US", { month: "short" }));
+    }
+
+    const monthlyChartData = lastSixMonths.map((month) => ({
+      month,
+      emissions: monthlyData[month]?.emissions || 0,
+      credits: monthlyData[month]?.credits || 0,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          full_name: user.full_name,
+          carbon_credits: user.carbon_credits,
+        },
+        stats: {
+          totalConsumption,
+          totalEmissions,
+          totalCredits,
+          recyclingContributions: 0, // Not tracked yet
+        },
+        monthlyData: monthlyChartData,
+        recentUploads: userBillingData.slice(-5).reverse(),
+      },
+    });
+  } catch (error) {
+    console.error("Get user dashboard error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 // Get leaderboard data
 export const handleGetLeaderboard: RequestHandler = (_req, res) => {
   try {
