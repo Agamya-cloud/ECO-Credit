@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   Leaf,
   BarChart3,
