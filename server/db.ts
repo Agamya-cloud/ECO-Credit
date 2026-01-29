@@ -32,6 +32,18 @@ db.exec(`
     expires_at DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS billing_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    energy_type TEXT NOT NULL,
+    units_consumed REAL NOT NULL,
+    carbon_emissions REAL NOT NULL,
+    credits_earned INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
 `);
 
 // Add demo user if it doesn't exist
