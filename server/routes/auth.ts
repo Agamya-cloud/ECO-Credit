@@ -121,6 +121,7 @@ export const handleSignin: RequestHandler = async (req, res) => {
     const user = usersStorage.getByEmail(data.email);
 
     if (!user) {
+      console.log(`[SIGNIN] User not found with email: ${data.email}`);
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -129,13 +130,21 @@ export const handleSignin: RequestHandler = async (req, res) => {
 
     // Verify password
     const isValidPassword = verifyPassword(data.password, user.password_hash);
+    const inputHash = hashPassword(data.password);
+    const storedHash = user.password_hash;
+
+    console.log(`[SIGNIN] User: ${user.email}`);
+    console.log(`[SIGNIN] Input hash matches: ${inputHash === storedHash}`);
 
     if (!isValidPassword) {
+      console.log(`[SIGNIN] Password verification failed for: ${data.email}`);
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       } as AuthResponse);
     }
+
+    console.log(`[SIGNIN] Signin successful for: ${data.email}`);
 
     // Create session token
     const token = crypto.randomBytes(32).toString("hex");
