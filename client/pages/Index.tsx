@@ -70,10 +70,10 @@ export default function Index() {
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
                 <Link
-                  to="/dashboard"
+                  to={isAuthenticated ? "/dashboard" : "/signup"}
                   className="inline-flex items-center justify-center px-8 py-3 bg-eco-green text-white rounded-lg hover:bg-eco-green-dark transition-colors duration-200 font-semibold group"
                 >
-                  Get Started
+                  {isAuthenticated ? "Go to Dashboard" : "Get Started"}
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <a
