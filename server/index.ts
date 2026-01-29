@@ -36,5 +36,10 @@ export function createServer() {
   app.post("/api/auth/verify", handleVerifyToken);
   app.post("/api/auth/logout", handleLogout);
 
+  // Billing routes
+  app.post("/api/billing/upload", handleBillingUpload);
+  app.get("/api/billing/history", handleGetBillingHistory);
+  app.get("/api/leaderboard", handleGetLeaderboard);
+
   return app;
 }
