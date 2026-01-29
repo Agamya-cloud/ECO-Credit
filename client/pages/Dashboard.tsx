@@ -63,7 +63,10 @@ export default function Dashboard() {
       });
 
       if (response.ok) {
-        const data = (await response.json()) as { success: boolean; data: DashboardData };
+        const data = (await response.json()) as {
+          success: boolean;
+          data: DashboardData;
+        };
         if (data.success) {
           setDashboardData(data.data);
         }

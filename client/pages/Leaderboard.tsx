@@ -123,7 +123,9 @@ export default function Leaderboard() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-gray-600 text-sm">CO₂ Reduced</p>
               <p className="text-2xl font-bold text-eco-green-dark">
-                {isLoading ? "-" : `${stats.totalReduction.toLocaleString()} kg`}
+                {isLoading
+                  ? "-"
+                  : `${stats.totalReduction.toLocaleString()} kg`}
               </p>
             </div>
           </div>
@@ -162,7 +164,9 @@ export default function Leaderboard() {
                       <p className="text-3xl font-bold">
                         {userData.credits.toLocaleString()} Credits
                       </p>
-                      <p>{userData.reduction.toLocaleString()} kg CO₂ Reduced</p>
+                      <p>
+                        {userData.reduction.toLocaleString()} kg CO₂ Reduced
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -198,9 +202,7 @@ export default function Leaderboard() {
                         <tr
                           key={userData.id}
                           className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                            user?.id === userData.id
-                              ? "bg-eco-green-light"
-                              : ""
+                            user?.id === userData.id ? "bg-eco-green-light" : ""
                           }`}
                         >
                           <td className="py-4 px-6">

@@ -48,7 +48,10 @@ function initializeStorage() {
   try {
     // Initialize users file
     if (!fs.existsSync(usersFile)) {
-      fs.writeFileSync(usersFile, JSON.stringify({ users: [], nextId: 1 }, null, 2));
+      fs.writeFileSync(
+        usersFile,
+        JSON.stringify({ users: [], nextId: 1 }, null, 2),
+      );
     } else {
       // Validate file can be parsed
       const content = fs.readFileSync(usersFile, "utf-8");
@@ -57,7 +60,10 @@ function initializeStorage() {
 
     // Initialize billing file
     if (!fs.existsSync(billingFile)) {
-      fs.writeFileSync(billingFile, JSON.stringify({ entries: [], nextId: 1 }, null, 2));
+      fs.writeFileSync(
+        billingFile,
+        JSON.stringify({ entries: [], nextId: 1 }, null, 2),
+      );
     } else {
       const content = fs.readFileSync(billingFile, "utf-8");
       JSON.parse(content);
@@ -100,7 +106,9 @@ export const usersStorage = {
   getByEmail(email: string): StoredUser | undefined {
     try {
       const users = this.getAll();
-      console.log(`[STORAGE] Searching for user with email: ${email}. Total users in storage: ${users.length}`);
+      console.log(
+        `[STORAGE] Searching for user with email: ${email}. Total users in storage: ${users.length}`,
+      );
       const user = users.find((u) => u.email === email);
       if (user) {
         console.log(`[STORAGE] Found user: ${email}`);
@@ -136,7 +144,9 @@ export const usersStorage = {
       }
 
       fs.writeFileSync(usersFile, JSON.stringify(data, null, 2));
-      console.log(`[STORAGE] User file saved. Total users: ${data.users.length}`);
+      console.log(
+        `[STORAGE] User file saved. Total users: ${data.users.length}`,
+      );
     } catch (error) {
       console.error(`[STORAGE] Error saving user: ${error}`);
       throw error;

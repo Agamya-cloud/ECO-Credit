@@ -189,10 +189,8 @@ export const handleGetUserDashboard: RequestHandler = (req, res) => {
     const totalCredits = user.carbon_credits;
 
     // Group billing data by month
-    const monthlyData: Record<
-      string,
-      { emissions: number; credits: number }
-    > = {};
+    const monthlyData: Record<string, { emissions: number; credits: number }> =
+      {};
     userBillingData.forEach((entry) => {
       const date = new Date(entry.date);
       const monthKey = date.toLocaleDateString("en-US", {
@@ -281,7 +279,10 @@ export const handleGetLeaderboard: RequestHandler = (_req, res) => {
 
     // Calculate stats
     const totalUsers = leaderboardUsers.length;
-    const totalCredits = leaderboardUsers.reduce((sum, u) => sum + u.credits, 0);
+    const totalCredits = leaderboardUsers.reduce(
+      (sum, u) => sum + u.credits,
+      0,
+    );
     const totalReduction = leaderboardUsers.reduce(
       (sum, u) => sum + u.reduction,
       0,

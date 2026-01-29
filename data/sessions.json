@@ -1,1 +1,9 @@
-{"sessions":{}}
+{
+  "sessions": {
+    "873822439dc0b67f8da6680cea0d1ad038879d61c0e90a0ff7a93a4062e5ca70": {
+      "user_id": 1,
+      "token": "873822439dc0b67f8da6680cea0d1ad038879d61c0e90a0ff7a93a4062e5ca70",
+      "expires_at": "2026-02-05T10:01:50.030Z"
+    }
+  }
+}

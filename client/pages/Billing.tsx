@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
-import { Upload, FileText, AlertCircle, CheckCircle, Loader } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Loader,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface BillingEntry {
@@ -126,7 +132,10 @@ export default function Billing() {
       }
     } catch (error) {
       console.error("Submit error:", error);
-      setMessage({ type: "error", text: "An error occurred during submission" });
+      setMessage({
+        type: "error",
+        text: "An error occurred during submission",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -201,9 +210,7 @@ export default function Billing() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-eco-green"
                   >
                     <option value="">Select energy type</option>
-                    <option value="Electricity (kWh)">
-                      Electricity (kWh)
-                    </option>
+                    <option value="Electricity (kWh)">Electricity (kWh)</option>
                     <option value="Natural Gas (therms)">
                       Natural Gas (therms)
                     </option>

@@ -1,1 +1,15 @@
-{"users":[],"nextId":1}
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "jasmine",
+      "email": "jasminesoni29@gmail.com",
+      "password_hash": "6d1c5859550824d403d8c31af9ac673b7ba206e6f87e61e096a017299f74d63f",
+      "full_name": "Jasmine Soni ",
+      "carbon_credits": 0,
+      "created_at": "2026-01-29T10:01:34.139Z",
+      "updated_at": "2026-01-29T10:01:34.139Z"
+    }
+  ],
+  "nextId": 2
+}
