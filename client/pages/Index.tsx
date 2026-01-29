@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 export default function Index() {
+  const { isAuthenticated } = useAuth();
   const features = [
     {
       icon: BarChart3,
